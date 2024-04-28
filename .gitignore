@@ -1,0 +1,9 @@
+.vscode
+.DS_Store
+
+# Arduino
+*.svd
+debug.cfg
+debug_custom.json
+
+custom.h

@@ -1,0 +1,120 @@
+#include "states.h"
+
+#define LED_PIN_LEG 7
+#define LED_PIN_THIGH 8
+#define LED_PIN_WAIST 10
+#define LED_PIN_BODY 6
+
+const int brightness1 = 210;
+const int brightness2 = 48;
+const int margin = 10;
+
+void setKeyframes(BaseChannel* channel, int offset) {
+  channel->add(0 + offset, 255);
+  channel->add(30 + offset, brightness2);
+  channel->add(45, brightness2);
+  for (int i = 0; i < 10; i ++) {
+    channel->add(45 + i * 30 + margin, brightness1);
+    channel->add(60 + i * 30 + margin, brightness2);
+  }
+  int lastOffset = 45 + 10 * 30 + margin;
+  channel->add(lastOffset, brightness1);
+  channel->add(lastOffset + 10 + (9 - offset), brightness1);
+  channel->add(lastOffset + 40 + (9 - offset), 255);
+  channel->add(lastOffset + 90, 255);
+}
+
+void setInitialKeyframes(BaseChannel* channel) {
+  channel->add(0, 255);
+  channel->add(5, 255);
+}
+
+void setStartKeyframes(BaseChannel* channel, int offset) {
+  const int brightness1 = 210;
+  const int brightness2 = 48;
+  const int margin = 10;
+  channel->add(0 + offset, 255);
+  channel->add(30 + offset, brightness2);
+  channel->add(45, brightness2);
+  channel->add(45 + margin, brightness1);
+}
+
+void setEndKeyframes(BaseChannel* channel, int offset) {
+  int lastOffset = 0;
+  channel->add(lastOffset, brightness1);
+  channel->add(lastOffset + 10 + (9 - offset), brightness1);
+  channel->add(lastOffset + 40 + (9 - offset), 255);
+  channel->add(lastOffset + 90, 255);
+}
+
+void setWaitingKeyframes(BaseChannel* channel, int offset) {
+  channel->add(0, brightness1);
+  channel->add(10, brightness2);
+  channel->add(20, brightness1);
+}
+
+void setInitialAnimation(Animation* animation) {
+  ChannelCollection* channels = animation->getChannels();
+  BaseChannel* legChannel = channels->add(new LEDChannel(LED_PIN_LEG));
+  setInitialKeyframes(legChannel);
+  BaseChannel* thighChannel = channels->add(new LEDChannel(LED_PIN_THIGH));
+  setInitialKeyframes(thighChannel);
+  BaseChannel* waistChannel = channels->add(new LEDChannel(LED_PIN_WAIST));
+  setInitialKeyframes(waistChannel);
+  BaseChannel* bodyChannel = channels->add(new LEDChannel(LED_PIN_BODY));
+  setInitialKeyframes(bodyChannel);
+}
+
+void setStartAnimation(Animation* animation) {
+  ChannelCollection* channels = animation->getChannels();
+  BaseChannel* legChannel = channels->add(new LEDChannel(LED_PIN_LEG));
+  setStartKeyframes(legChannel, 9);
+  BaseChannel* thighChannel = channels->add(new LEDChannel(LED_PIN_THIGH));
+  setStartKeyframes(thighChannel, 6);
+  BaseChannel* waistChannel = channels->add(new LEDChannel(LED_PIN_WAIST));
+  setStartKeyframes(waistChannel, 3);
+  BaseChannel* bodyChannel = channels->add(new LEDChannel(LED_PIN_BODY));
+  setStartKeyframes(bodyChannel, 0);
+}
+
+void setEndAnimation(Animation* animation) {
+  ChannelCollection* channels = animation->getChannels();
+  BaseChannel* legChannel = channels->add(new LEDChannel(LED_PIN_LEG));
+  setEndKeyframes(legChannel, 9);
+  BaseChannel* thighChannel = channels->add(new LEDChannel(LED_PIN_THIGH));
+  setEndKeyframes(thighChannel, 6);
+  BaseChannel* waistChannel = channels->add(new LEDChannel(LED_PIN_WAIST));
+  setEndKeyframes(waistChannel, 3);
+  BaseChannel* bodyChannel = channels->add(new LEDChannel(LED_PIN_BODY));
+  setEndKeyframes(bodyChannel, 0);
+}
+
+void setWaitingAnimation(Animation* animation) {
+  ChannelCollection* channels = animation->getChannels();
+  BaseChannel* legChannel = channels->add(new LEDChannel(LED_PIN_LEG));
+  setWaitingKeyframes(legChannel, 9);
+  BaseChannel* thighChannel = channels->add(new LEDChannel(LED_PIN_THIGH));
+  setWaitingKeyframes(thighChannel, 6);
+  BaseChannel* waistChannel = channels->add(new LEDChannel(LED_PIN_WAIST));
+  setWaitingKeyframes(waistChannel, 3);
+  BaseChannel* bodyChannel = channels->add(new LEDChannel(LED_PIN_BODY));
+  setWaitingKeyframes(bodyChannel, 0);
+}
+
+void setAnimations() {
+  Animation* initialAnimation = new Animation(0, 0);
+  setInitialAnimation(initialAnimation);
+  states.add(initialAnimation);
+
+  Animation* startAnimation = new Animation(0, 1);
+  setStartAnimation(startAnimation);
+  states.add(startAnimation);
+
+  Animation* endAnimation = new Animation(1, 0);
+  setEndAnimation(endAnimation);
+  states.add(endAnimation);
+
+  Animation* waitingAnimation = new Animation(1, 1);
+  setWaitingAnimation(waitingAnimation);
+  states.add(waitingAnimation);
+}
