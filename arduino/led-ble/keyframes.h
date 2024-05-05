@@ -3,7 +3,12 @@
 
 #define MAX_CHANNELS 16
 
+#define SIZE_KEYFRAME_BYTES 8
+
+#define KEYFRAME_TYPE_PWM 1
+
 typedef struct __keyframe_t {
+    uint8_t type;
     uint16_t frame;
     float value;
 } keyframe_t;

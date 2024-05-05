@@ -29,8 +29,9 @@ void Keyframes::add(const keyframe_t &keyframe) {
     this->num_keyframes++;
 }
 
+// Float values for PWM
 void Keyframes::add(int frame, float value) {
-    keyframe_t keyframe = {frame, value};
+    keyframe_t keyframe = {KEYFRAME_TYPE_PWM, frame, value};
     this->add(keyframe);
 }
 
@@ -58,6 +59,10 @@ int Keyframes::getLastFrame() {
 }
 
 size_t Keyframes::writeTo(void *buffer, size_t size) {
+    if (sizeof(keyframe_t) != SIZE_KEYFRAME_BYTES) {
+        Serial.printf("Keyframes::writeTo: invalid keyframe size: %d != %d\n", sizeof(keyframe_t), SIZE_KEYFRAME_BYTES);
+        return 0;
+    }
     if (buffer == NULL) {
         return sizeof(keyframe_t) * this->num_keyframes;
     }
@@ -70,6 +75,10 @@ size_t Keyframes::writeTo(void *buffer, size_t size) {
 }
 
 Keyframes* Keyframes::readFrom(const void *buffer, size_t size) {
+    if (sizeof(keyframe_t) != SIZE_KEYFRAME_BYTES) {
+        Serial.printf("Keyframes::writeTo: invalid keyframe size: %d != %d\n", sizeof(keyframe_t), SIZE_KEYFRAME_BYTES);
+        return 0;
+    }
     if (size % sizeof(keyframe_t) != 0) {
         Serial.printf("Keyframes::readFrom: invalid buffer size: %d\n", size);
         return NULL;

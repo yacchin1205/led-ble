@@ -126,6 +126,17 @@ void States::add(Animation *animation) {
     this->num_animations++;
 }
 
+void States::replace(Animation *animation) {
+    for (int i = 0; i < this->num_animations; i++) {
+        if (this->animations[i]->isTarget(animation->from_state, animation->to_state)) {
+            delete this->animations[i];
+            this->animations[i] = animation;
+            return;
+        }
+    }
+    this->add(animation);
+}
+
 void States::loop() {
     if (this->current_animation == NULL) {
         // decide next animation
@@ -162,6 +173,28 @@ size_t States::writeTo(void *buffer, size_t size) {
     size_t offset = header_size;
     for (int i = 0; i < this->num_animations; i++) {
         offset += this->animations[i]->writeTo((char *)buffer + offset, size - offset);
+    }
+    return total_size;
+}
+
+size_t States::writeHeaderTo(void *buffer, size_t size) {
+    states_header_t header = {this->delay_msec, this->initial_state, this->num_animations};
+    size_t header_size = sizeof(states_header_t);
+    size_t total_size = header_size;
+    for (int i = 0; i < this->num_animations; i++) {
+        total_size += this->animations[i]->writeHeaderTo(NULL, 0);
+    }
+    if (buffer == NULL) {
+        return total_size;
+    }
+    if (size < total_size) {
+        Serial.printf("States::writeHeaderTo: buffer size is too small: %d < %d\n", size, total_size);
+        return 0;
+    }
+    memcpy(buffer, &header, header_size);
+    size_t offset = header_size;
+    for (int i = 0; i < this->num_animations; i++) {
+        offset += this->animations[i]->writeHeaderTo((char *)buffer + offset, size - offset);
     }
     return total_size;
 }

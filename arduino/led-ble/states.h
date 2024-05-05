@@ -9,9 +9,11 @@ typedef struct __animation_header_t {
 } animation_header_t;
 
 class Animation {
-    private:
+    public:
         unsigned char from_state;
         unsigned char to_state;
+
+    private:
         ChannelCollection* channels;
 
     public:
@@ -45,15 +47,17 @@ class States {
         int num_next_states;
         unsigned char next_states[MAX_NEXT_STATES];
         Animation *current_animation;
-    
+
     public:
         static States* readFrom(const void *buffer, size_t size);
         States(unsigned char initial_state, int delay_msec=100, int buffer_size=16);
         ~States();
         bool reserveState(unsigned char state);
         void add(Animation *animation);
+        void replace(Animation *animation);
         void loop();
         size_t writeTo(void *buffer, size_t size);
+        size_t writeHeaderTo(void *buffer, size_t size);
         unsigned char getAnimationCount() { return this->num_animations; }
         Animation* getAnimation(int index) { return this->animations[index]; }
         Animation* getAnimation(int from_state, int to_state);
