@@ -138,6 +138,7 @@ void States::replace(Animation *animation) {
 }
 
 void States::loop() {
+    Serial.print(".");
     if (this->current_animation == NULL) {
         // decide next animation
         this->next_state = this->popNextState();

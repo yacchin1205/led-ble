@@ -148,11 +148,11 @@ BaseChannel* BaseChannel::readFrom(const void *buffer, size_t size, size_t* size
 
 LEDChannel::LEDChannel(unsigned char pin, int buffer_size) : BaseChannel(buffer_size) {
     this->pin = pin;
-    pinMode(this->pin, OUTPUT);
+    // pinMode(this->pin, OUTPUT);
 }
 
 void LEDChannel::setValue(int frame, float value) {
-    //Serial.printf("LEDChannel(%d)::setValue(%f) for #%d\n", this->pin, value, frame);
+    // Serial.printf("LEDChannel(%d)::setValue(%f) for #%d\n", this->pin, value, frame);
     analogWrite(this->pin, value);
 }
 
