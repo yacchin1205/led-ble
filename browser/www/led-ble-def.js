@@ -1,5 +1,5 @@
 const SERVICE_UUID = '19B10000-E8F2-537E-4F6C-D104768A1214';
-const CHARACTERISTICS_UUID = '19B10002-E8F2-537E-4F6C-D104768A1215';
+const DEF_CHARACTERISTICS_UUID = '19B10002-E8F2-537E-4F6C-D104768A1216';
 
 const SIZE_ANIMATION_CHARACTERISTIC_HEADER = 1;
 const SIZE_STATES_HEADER = 4;
@@ -41,7 +41,7 @@ async function getCharacteristicsOnDevice(device) {
 
 async function getCurrentStates(characteristics) {
     console.log('Got Characteristics:', characteristics);
-    const target = characteristics.find(c => c.uuid === CHARACTERISTICS_UUID.toLowerCase());
+    const target = characteristics.find(c => c.uuid === DEF_CHARACTERISTICS_UUID.toLowerCase());
     if (!target) {
         throw new Error('Characteristics not found.');
     }
@@ -77,7 +77,7 @@ async function getCurrentStates(characteristics) {
 }
 
 async function setCurrentStates(characteristics, data) {
-    const target = characteristics.find(c => c.uuid === CHARACTERISTICS_UUID.toLowerCase());
+    const target = characteristics.find(c => c.uuid === DEF_CHARACTERISTICS_UUID.toLowerCase());
     if (!target) {
         throw new Error('Characteristics not found.');
     }
@@ -492,13 +492,14 @@ function parseAnimationCharacteristicsBuffer(value) {
         } else {
             throw new Error(`Invalid channel type. ${baseChannel.type}`);
         }
-
+        if (channel.base && channel.base.buffer_size) {
+            delete channel.base.buffer_size;
+        }
         channels.push({ channel, keyframes });
     }
     return {
         states,
         animation,
-        channelCollection,
         channels,
     };
 }

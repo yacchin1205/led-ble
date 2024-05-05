@@ -2,11 +2,21 @@
     <head>
         <title>BLE Sample</title>
         <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-        <script src="led-ble.js"></script>
+        <script src="led-ble-def.js"></script>
+        <script src="led-ble-metadata.js"></script>
+        <script src="led-ble-state.js"></script>
         <script src="index.js"></script>
     </head>
     <body>
         <h1>BLE Sample</h1>
+        <div id="metadata">Unknown Device</div>
+        <div>
+            State:
+            <select id="current-state"></select>
+            <button id="set-state">
+                Set
+            </button>
+        </div>
         <div>
             <button id="connect">Connect</button>
             <button id="read">Read</button>

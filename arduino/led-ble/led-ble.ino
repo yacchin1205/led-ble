@@ -1,5 +1,6 @@
 #include <ArduinoBLE.h>
 #include "states.h"
+#include "metadata.h"
 #include "ble.h"
 
 #define DEVICE_NAME "GetterLED"
@@ -7,16 +8,19 @@
 BLEService ledService("19B10000-E8F2-537E-4F6C-D104768A1214"); // Bluetooth® Low Energy LED Service
 
 // unsigned char animationsCharacteristicBuffer[MAX_ANIMATIONS_CHARACTERISTIC_SIZE];
-BLECharacteristic definitionCharacteristic("19B10002-E8F2-537E-4F6C-D104768A1215", BLERead | BLEWrite, MAX_DEFINITION_CHARACTERISTIC_SIZE);
 BLEByteCharacteristic switchCharacteristic("19B10001-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite);
+BLECharacteristic metadataCharacteristic("19B10002-E8F2-537E-4F6C-D104768A1215", BLERead, MAX_METADATA_CHARACTERISTIC_SIZE);
+BLECharacteristic definitionCharacteristic("19B10002-E8F2-537E-4F6C-D104768A1216", BLERead | BLEWrite, MAX_DEFINITION_CHARACTERISTIC_SIZE);
 
 States* states = NULL;
+Metadata* metadata = NULL;
 
 #include "custom.h"
 
 void setup() {
   Serial.begin(115200);
 
+  setMetadata();
   states = new States(0);
   setAnimations();
 
@@ -31,11 +35,17 @@ void setup() {
 
   ledService.addCharacteristic(definitionCharacteristic);
   ledService.addCharacteristic(switchCharacteristic);
+  ledService.addCharacteristic(metadataCharacteristic);
 
   BLE.addService(ledService);
 
   writeStatesCharacteristic(states, &definitionCharacteristic);
   switchCharacteristic.writeValue(0);
+  if (metadata != NULL) {
+    writeMetadataCharacteristic(metadata, &metadataCharacteristic);
+  } else {
+    Serial.println("No metadata found");
+  }
 
   BLE.advertise();
 

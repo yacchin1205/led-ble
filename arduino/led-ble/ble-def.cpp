@@ -1,4 +1,4 @@
-#include "ble.h"
+#include "ble-def.h"
 
 bool writeStatesCharacteristic(
   States* states, BLECharacteristic* definitionCharacteristic
