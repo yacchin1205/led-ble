@@ -1,8 +1,8 @@
 #include "metadata.h"
 
-ChannelMetadata::ChannelMetadata(uint8_t type, uint8_t led_pin, const char* channel_name) {
+ChannelMetadata::ChannelMetadata(uint8_t type, uint8_t sink, const char* channel_name) {
     this->type = type;
-    this->led_pin = led_pin;
+    this->sink = sink;
     strcpy(this->channel_name, channel_name);
 }
 
@@ -16,7 +16,7 @@ size_t ChannelMetadata::writeTo(void *buffer, size_t size) {
     if (size < sizeof(channel_metdata_t) + strlen(this->channel_name)) {
         return 0;
     }
-    channel_metdata_t metadata = {this->type, this->led_pin, strlen(this->channel_name)};
+    channel_metdata_t metadata = {this->type, this->sink, strlen(this->channel_name)};
     memcpy(buffer, &metadata, sizeof(channel_metdata_t));
     memcpy((char*)buffer + sizeof(channel_metdata_t), this->channel_name, strlen(this->channel_name));
     return sizeof(channel_metdata_t) + strlen(this->channel_name);
@@ -42,7 +42,7 @@ Metadata::~Metadata() {
     }
 }
 
-ChannelMetadata* Metadata::add(uint8_t type, uint8_t led_pin, const char* channel_name) {
+ChannelMetadata* Metadata::add(uint8_t type, uint8_t sink, const char* channel_name) {
     if (this->num_channels >= this->buffer_size) {
         // extend buffer
         this->buffer_size += this->buffer_size_unit;
@@ -52,7 +52,7 @@ ChannelMetadata* Metadata::add(uint8_t type, uint8_t led_pin, const char* channe
         free(old_buffer);
         old_buffer = NULL;
     }
-    ChannelMetadata* channel = new ChannelMetadata(type, led_pin, channel_name);
+    ChannelMetadata* channel = new ChannelMetadata(type, sink, channel_name);
     this->channels[this->num_channels] = channel;
     this->num_channels++;
     return channel;

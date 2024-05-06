@@ -43,6 +43,7 @@ class ChannelSink {
         uint8_t sink;
         ChannelSink(uint8_t sink);
         virtual void setValue(int frame, float value) = 0;
+        virtual void apply(int frame) = 0;
 };
 
 class AnalogWriteChannelSink : public ChannelSink {
@@ -53,6 +54,7 @@ class AnalogWriteChannelSink : public ChannelSink {
         AnalogWriteChannelSink(uint8_t sink, uint8_t pin);
         ~AnalogWriteChannelSink();
         void setValue(int frame, float value);
+        void apply(int frame);
 };
 
 class ChannelSinks {
@@ -65,6 +67,7 @@ class ChannelSinks {
         ~ChannelSinks();
         ChannelSink* add(ChannelSink *sink);
         void setValue(uint8_t sink, int frame, float value);
+        void apply(int frame);
 };
 
 class Channel {

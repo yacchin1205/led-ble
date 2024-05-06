@@ -10,7 +10,7 @@
 
 typedef struct __channel_metdata_t {
     uint8_t type;
-    uint8_t led_pin;
+    uint8_t sink;
 
     uint8_t channel_name_size;
     char* channel_name;
@@ -29,11 +29,11 @@ typedef struct __metadata_t {
 class ChannelMetadata {
     private:
         uint8_t type;
-        uint8_t led_pin;
+        uint8_t sink;
         char channel_name[MAX_SIZE_DEVICE_NAME];
 
     public:
-        ChannelMetadata(uint8_t type, uint8_t led_pin, const char* channel_name);
+        ChannelMetadata(uint8_t type, uint8_t sink, const char* channel_name);
         ~ChannelMetadata();
         size_t writeTo(void *buffer, size_t size);
 };
@@ -50,6 +50,6 @@ class Metadata {
     public:
         Metadata(const char* device_name, const uint8_t* uuid, int buffer_size=16);
         ~Metadata();
-        ChannelMetadata* add(uint8_t type, uint8_t led_pin, const char* channel_name);
+        ChannelMetadata* add(uint8_t type, uint8_t sink, const char* channel_name);
         size_t writeTo(void *buffer, size_t size);
 };

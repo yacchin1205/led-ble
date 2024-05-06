@@ -67,19 +67,19 @@ function parseMetadata(buffer, offset) {
 function parseChannelMetadata(buffer, offset) {
     /*
     uint8_t type;
-    uint8_t led_pin;
+    uint8_t sink;
 
     uint8_t channel_name_size;
     char* channel_name;
     */
     const type = buffer.getUint8(offset);
     offset += 1;
-    const ledPin = buffer.getUint8(offset);
+    const sink = buffer.getUint8(offset);
     offset += 1;
     const channelNameSize = buffer.getUint8(offset);
     offset += 1;
 
-    console.log('Type:', type, 'LED Pin:', ledPin, 'Channel Name Size:', channelNameSize);
+    console.log('Type:', type, 'Sink:', sink, 'Channel Name Size:', channelNameSize);
 
     // channel_name
     offset += 1; // 4 bytes padding
@@ -90,7 +90,7 @@ function parseChannelMetadata(buffer, offset) {
     return {
         channelMetadata: {
             type,
-            ledPin,
+            sink,
             channelName,
         },
         offset,

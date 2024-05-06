@@ -107,6 +107,9 @@ void AnalogWriteChannelSink::setValue(int frame, float value) {
     analogWrite(this->pin, value);
 }
 
+void AnalogWriteChannelSink::apply(int frame) {
+}
+
 ChannelSinks::ChannelSinks() {
     this->num_sinks = 0;
     for (int i = 0; i < MAX_SINKS; i++) {
@@ -142,6 +145,12 @@ void ChannelSinks::setValue(uint8_t sink, int frame, float value) {
         }
     }
     Serial.printf("ChannelSinks::setValue: sink not found: %d\n", sink);
+}
+
+void ChannelSinks::apply(int frame) {
+    for (int i = 0; i < this->num_sinks; i++) {
+        this->sinks[i]->apply(frame);
+    }
 }
 
 Channel::Channel(unsigned char sink, int buffer_size): keyframes(buffer_size) {
@@ -240,6 +249,7 @@ bool ChannelCollection::update(ChannelSinks* sinks, int frame) {
     for (int i = 0; i < this->num_channels; i++) {
         updated |= this->channels[i]->update(sinks, frame);
     }
+    sinks->apply(frame);
     return updated;
 }
 
