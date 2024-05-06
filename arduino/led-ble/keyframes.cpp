@@ -91,75 +91,110 @@ Keyframes* Keyframes::readFrom(const void *buffer, size_t size) {
     return keyframes;
 }
 
-BaseChannel::BaseChannel(int buffer_size): keyframes(buffer_size) {
+ChannelSink::ChannelSink(uint8_t sink) {
+    this->sink = sink;
 }
 
-void BaseChannel::add(const keyframe_t &keyframe) {
-    this->keyframes.add(keyframe);
-}
-
-void BaseChannel::add(int frame, float value) {
-    this->keyframes.add(frame, value);
-}
-
-bool BaseChannel::update(int frame) {
-    if (frame > this->keyframes.getLastFrame()) {
-        return false;
-    }
-    this->setValue(frame, this->keyframes.getValue(frame));
-    return true;
-}
-
-BaseChannel* BaseChannel::readFrom(const void *buffer, size_t size, size_t* sizeRead) {
-    if (size < sizeof(base_channel_header_t)) {
-        Serial.printf("BaseChannel::readFrom: invalid buffer size: %d\n", size);
-        return NULL;
-    }
-    const base_channel_header_t *header = (const base_channel_header_t *)buffer;
-    if (header->type == CHANNEL_TYPE_LED) {
-        if (size < sizeof(led_channel_header_t)) {
-            Serial.printf("BaseChannel::readFrom: invalid buffer size: %d\n", size);
-            return NULL;
-        }
-        const led_channel_header_t *led_header = (const led_channel_header_t *)buffer;
-        if (size < sizeof(led_channel_header_t) + led_header->base.buffer_size) {
-            Serial.printf("BaseChannel::readFrom: invalid buffer size: %d\n", size);
-            return NULL;
-        }
-        Keyframes *keyframes = Keyframes::readFrom(led_header + 1,  led_header->base.buffer_size);
-        if (keyframes == NULL) {
-            Serial.println("BaseChannel::readFrom: failed to read keyframes");
-            return NULL;
-        }
-        LEDChannel *channel = new LEDChannel(led_header->pin, keyframes->num_keyframes);
-        for (int i = 0; i < keyframes->num_keyframes; i++) {
-            channel->add(keyframes->keyframes[i]);
-        }
-        delete keyframes;
-        keyframes = NULL;
-        if (sizeRead != NULL) {
-            *sizeRead = sizeof(led_channel_header_t) + led_header->base.buffer_size;
-        }
-        return channel;
-    }
-    Serial.printf("BaseChannel::readFrom: invalid channel type: %d\n", header->type);
-    return NULL;
-}
-
-LEDChannel::LEDChannel(unsigned char pin, int buffer_size) : BaseChannel(buffer_size) {
+AnalogWriteChannelSink::AnalogWriteChannelSink(uint8_t sink, uint8_t pin): ChannelSink(sink){
     this->pin = pin;
-    // pinMode(this->pin, OUTPUT);
 }
 
-void LEDChannel::setValue(int frame, float value) {
+AnalogWriteChannelSink::~AnalogWriteChannelSink() {
+}
+
+void AnalogWriteChannelSink::setValue(int frame, float value) {
     // Serial.printf("LEDChannel(%d)::setValue(%f) for #%d\n", this->pin, value, frame);
     analogWrite(this->pin, value);
 }
 
-size_t LEDChannel::writeTo(void *buffer, size_t size) {
+ChannelSinks::ChannelSinks() {
+    this->num_sinks = 0;
+    for (int i = 0; i < MAX_SINKS; i++) {
+        this->sinks[i] = NULL;
+    }
+}
+
+ChannelSinks::~ChannelSinks() {
+    for (int i = 0; i < this->num_sinks; i++) {
+        if (this->sinks[i] == NULL) {
+            continue;
+        }
+        delete this->sinks[i];
+        this->sinks[i] = NULL;
+    }
+}
+
+ChannelSink* ChannelSinks::add(ChannelSink *sink) {
+    if (this->num_sinks >= MAX_SINKS) {
+        Serial.println("ChannelSinks::add: too many sinks");
+        return NULL;
+    }
+    this->sinks[this->num_sinks] = sink;
+    this->num_sinks++;
+    return sink;
+}
+
+void ChannelSinks::setValue(uint8_t sink, int frame, float value) {
+    for (int i = 0; i < this->num_sinks; i++) {
+        if (this->sinks[i]->sink == sink) {
+            this->sinks[i]->setValue(frame, value);
+            return;
+        }
+    }
+    Serial.printf("ChannelSinks::setValue: sink not found: %d\n", sink);
+}
+
+Channel::Channel(unsigned char sink, int buffer_size): keyframes(buffer_size) {
+    this->sink = sink;
+}
+
+void Channel::add(const keyframe_t &keyframe) {
+    this->keyframes.add(keyframe);
+}
+
+void Channel::add(int frame, float value) {
+    this->keyframes.add(frame, value);
+}
+
+bool Channel::update(ChannelSinks* sinks, int frame) {
+    if (frame > this->keyframes.getLastFrame()) {
+        return false;
+    }
+    sinks->setValue(this->sink, frame, this->keyframes.getValue(frame));
+    return true;
+}
+
+Channel* Channel::readFrom(const void *buffer, size_t size, size_t* sizeRead) {
+    if (size < sizeof(channel_header_t)) {
+        Serial.printf("Channel::readFrom: invalid buffer size: %d\n", size);
+        return NULL;
+    }
+    const channel_header_t *header = (const channel_header_t *)buffer;
+    if (size < sizeof(channel_header_t) + header->buffer_size) {
+        Serial.printf("Channel::readFrom: invalid buffer size: %d\n", size);
+        return NULL;
+    }
+    Keyframes *keyframes = Keyframes::readFrom(header + 1,  header->buffer_size);
+    if (keyframes == NULL) {
+        Serial.println("Channel::readFrom: failed to read keyframes");
+        return NULL;
+    }
+    Channel *channel = new Channel(header->sink, keyframes->num_keyframes);
+    for (int i = 0; i < keyframes->num_keyframes; i++) {
+        channel->add(keyframes->keyframes[i]);
+    }
+    delete keyframes;
+    keyframes = NULL;
+    if (sizeRead != NULL) {
+        *sizeRead = sizeof(channel_header_t) + header->buffer_size;
+    }
+    return channel;
+}
+
+size_t Channel::writeTo(void *buffer, size_t size) {
     size_t keyframes_size = this->keyframes.writeTo(NULL, 0);
-    led_channel_header_t header = {{CHANNEL_TYPE_LED, keyframes_size}, this->pin};
-    size_t header_size = sizeof(led_channel_header_t);
+    channel_header_t header = {this->sink, keyframes_size};
+    size_t header_size = sizeof(channel_header_t);
     size_t total_size = header_size + keyframes_size;
     if (buffer == NULL) {
         return total_size;
@@ -168,7 +203,7 @@ size_t LEDChannel::writeTo(void *buffer, size_t size) {
         Serial.printf("LEDChannel::writeTo: buffer size is too small: %d < %d\n", size, total_size);
         return 0;
     }
-    led_channel_header_t *header_ptr = (led_channel_header_t *)buffer;
+    channel_header_t *header_ptr = (channel_header_t *)buffer;
     memcpy(header_ptr, &header, header_size);
     this->keyframes.writeTo((keyframe_t *)(header_ptr + 1), keyframes_size);
     return total_size;
@@ -191,7 +226,7 @@ ChannelCollection::~ChannelCollection() {
     }
 }
 
-BaseChannel* ChannelCollection::add(BaseChannel *channel) {
+Channel* ChannelCollection::add(Channel *channel) {
     if (this->num_channels >= MAX_CHANNELS) {
         return NULL;
     }
@@ -200,10 +235,10 @@ BaseChannel* ChannelCollection::add(BaseChannel *channel) {
     return channel;
 }
 
-bool ChannelCollection::update(int frame) {
+bool ChannelCollection::update(ChannelSinks* sinks, int frame) {
     bool updated = false;
     for (int i = 0; i < this->num_channels; i++) {
-        updated |= this->channels[i]->update(frame);
+        updated |= this->channels[i]->update(sinks, frame);
     }
     return updated;
 }
@@ -242,7 +277,7 @@ ChannelCollection* ChannelCollection::readFrom(const void *buffer, size_t size, 
     size_t offset = sizeof(channel_collection_header_t);
     for (int i = 0; i < header->num_channels; i++) {
         size_t channelRead = 0;
-        BaseChannel *channel = BaseChannel::readFrom((char *)buffer + offset, size - offset, &channelRead);
+        Channel *channel = Channel::readFrom((char *)buffer + offset, size - offset, &channelRead);
         if (channel == NULL) {
             Serial.println("ChannelCollection::readFrom: failed to read channel");
             delete channels;

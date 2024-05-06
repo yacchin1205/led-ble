@@ -22,7 +22,7 @@ class Animation {
         ~Animation();
         bool isTarget(unsigned char from_state, unsigned char to_state);
         ChannelCollection* getChannels();
-        bool update(int frame);
+        bool update(ChannelSinks* sinks, int frame);
         size_t writeTo(void *buffer, size_t size);
         size_t writeHeaderTo(void *buffer, size_t size);
 };
@@ -55,7 +55,7 @@ class States {
         bool reserveState(unsigned char state);
         void add(Animation *animation);
         void replace(Animation *animation);
-        void loop();
+        void loop(ChannelSinks* sinks);
         size_t writeTo(void *buffer, size_t size);
         size_t writeHeaderTo(void *buffer, size_t size);
         unsigned char getAnimationCount() { return this->num_animations; }
@@ -64,5 +64,5 @@ class States {
 
     private:
         unsigned char popNextState();
-        bool progressAnimation();
+        bool progressAnimation(ChannelSinks* sinks);
 };

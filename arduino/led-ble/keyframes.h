@@ -1,7 +1,8 @@
 #pragma once
 #include "Arduino.h"
 
-#define MAX_CHANNELS 16
+#define MAX_CHANNELS 32
+#define MAX_SINKS 32
 
 #define SIZE_KEYFRAME_BYTES 8
 
@@ -32,44 +33,52 @@ class Keyframes {
         size_t writeTo(void *buffer, size_t size);
 };
 
-#define CHANNEL_TYPE_LED 1
-
-typedef struct __base_channel_header_t {
-    uint8_t type;
+typedef struct __channel_header_t {
+    uint8_t sink;
     uint8_t buffer_size;
-} base_channel_header_t;
+} channel_header_t;
 
-class BaseChannel {
-    protected:
-        Keyframes keyframes;
-    
+class ChannelSink {
     public:
-        static BaseChannel* readFrom(const void *buffer, size_t size, size_t* sizeRead);
-        BaseChannel(int buffer_size=16);
-        void add(const keyframe_t &keyframe);
-        void add(int frame, float value);
-        bool update(int frame);
-        virtual size_t writeTo(void *buffer, size_t size) = 0;
-
-    protected:
+        uint8_t sink;
+        ChannelSink(uint8_t sink);
         virtual void setValue(int frame, float value) = 0;
 };
 
-typedef struct __led_channel_header_t {
-    base_channel_header_t base;
-    uint8_t pin;
-} led_channel_header_t;
-
-class LEDChannel : public BaseChannel {
+class AnalogWriteChannelSink : public ChannelSink {
     private:
-        unsigned char pin;
+        uint8_t pin;
     
     public:
-        LEDChannel(unsigned char pin, int buffer_size=16);
-        size_t writeTo(void *buffer, size_t size);
-    
-    protected:
+        AnalogWriteChannelSink(uint8_t sink, uint8_t pin);
+        ~AnalogWriteChannelSink();
         void setValue(int frame, float value);
+};
+
+class ChannelSinks {
+    private:
+        int num_sinks;
+        ChannelSink* sinks[MAX_SINKS];
+    
+    public:
+        ChannelSinks();
+        ~ChannelSinks();
+        ChannelSink* add(ChannelSink *sink);
+        void setValue(uint8_t sink, int frame, float value);
+};
+
+class Channel {
+    protected:
+        Keyframes keyframes;
+        unsigned char sink;
+
+    public:
+        static Channel* readFrom(const void *buffer, size_t size, size_t* sizeRead);
+        Channel(unsigned char sink, int buffer_size=16);
+        void add(const keyframe_t &keyframe);
+        void add(int frame, float value);
+        bool update(ChannelSinks* sinks, int frame);
+        size_t writeTo(void *buffer, size_t size);
 };
 
 typedef struct __channel_collection_header_t {
@@ -79,13 +88,13 @@ typedef struct __channel_collection_header_t {
 class ChannelCollection {
     private:
         unsigned char num_channels;
-        BaseChannel* channels[MAX_CHANNELS];
+        Channel* channels[MAX_CHANNELS];
     
     public:
         static ChannelCollection* readFrom(const void *buffer, size_t size, size_t* sizeRead);
         ChannelCollection();
         ~ChannelCollection();
-        BaseChannel* add(BaseChannel *channel);
-        bool update(int frame);
+        Channel* add(Channel *channel);
+        bool update(ChannelSinks* sinks, int frame);
         size_t writeTo(void *buffer, size_t size);
 };

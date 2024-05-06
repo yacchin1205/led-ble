@@ -21,8 +21,8 @@ ChannelCollection* Animation::getChannels() {
     return this->channels;
 }
 
-bool Animation::update(int frame) {
-    return this->channels->update(frame);
+bool Animation::update(ChannelSinks* sinks, int frame) {
+    return this->channels->update(sinks, frame);
 }
 
 size_t Animation::writeTo(void *buffer, size_t size) {
@@ -137,7 +137,7 @@ void States::replace(Animation *animation) {
     this->add(animation);
 }
 
-void States::loop() {
+void States::loop(ChannelSinks* sinks) {
     Serial.print(".");
     if (this->current_animation == NULL) {
         // decide next animation
@@ -148,7 +148,7 @@ void States::loop() {
         }
         this->current_frames = 0;
     }
-    if (this->progressAnimation()) {
+    if (this->progressAnimation(sinks)) {
         delay(this->delay_msec);
         return;
     }
@@ -233,11 +233,11 @@ unsigned char States::popNextState() {
     return next_state;
 }
 
-bool States::progressAnimation() {
+bool States::progressAnimation(ChannelSinks* sinks) {
     if (this->current_animation == NULL) {
         return false;
     }
-    if (this->current_animation->update(this->current_frames)) {
+    if (this->current_animation->update(sinks, this->current_frames)) {
         this->current_frames++;
         return true;
     }

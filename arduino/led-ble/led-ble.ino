@@ -14,6 +14,7 @@ BLECharacteristic definitionCharacteristic("19B10002-E8F2-537E-4F6C-D104768A1216
 
 States* states = NULL;
 Metadata* metadata = NULL;
+ChannelSinks* sinks = NULL;
 
 #include "custom.h"
 
@@ -21,6 +22,8 @@ void setup() {
   Serial.begin(115200);
 
   setMetadata();
+  sinks = new ChannelSinks();
+  setSinks();
   states = new States(0);
   setAnimations();
 
@@ -56,7 +59,7 @@ void loop() {
   BLEDevice central = BLE.central();
 
   if (!central) {
-    states->loop();
+    states->loop(sinks);
     return;
   }
   Serial.print("Connected to central: ");
@@ -79,7 +82,7 @@ void loop() {
       Serial.printf("Next state: %d\n", value);
       states->reserveState(value);
     }
-    states->loop();
+    states->loop(sinks);
   }
 
   Serial.print(F("Disconnected from central: "));

@@ -168,14 +168,11 @@ async function setCurrentStates(characteristics, data) {
             if (!keyframes) {
                 throw new Error('Keyframes not found.');
             }
-            offset = serializeLEDChannelHeader(
+            offset = serializeChannelHeader(
                 sendAnimationView,
                 offset,
                 Object.assign({}, channel, {
-                    base: {
-                        type: 0x01,
-                        buffer_size: keyframes.length * SIZE_KEYFRAME
-                    }
+                    buffer_size: keyframes.length * SIZE_KEYFRAME
                 })
             );
             for (let i = 0; i < keyframes.length; i++) {
@@ -272,30 +269,17 @@ function serializeChannelCollectionHeader(buffer, offset, header) {
     return SIZE_CHANNEL_COLLECTION_HEADER + offset;
 }
 
-function serializeBaseChannelHeader(buffer, offset, header) {
+function serializeChannelHeader(buffer, offset, header) {
     /*
         // Serialize the buffer
-        typedef struct __base_channel_header_t {
-            uint8_t type;
+        typedef struct __channel_header_t {
+            uint8_t sink;
             uint8_t buffer_size;
         }
     */
-    buffer.setUint8(offset, header.type);
+    buffer.setUint8(offset, header.sink);
     buffer.setUint8(offset + 1, header.buffer_size);
     return SIZE_BASE_CHANNEL_HEADER + offset;
-}
-
-function serializeLEDChannelHeader(buffer, offset, header) {
-    /*
-        // Serialize the buffer
-        typedef struct __led_channel_header_t {
-            base_channel_header_t base;
-            uint8_t pin;
-        }
-    */
-    const baseOffset = serializeBaseChannelHeader(buffer, offset, header.base);
-    buffer.setUint8(baseOffset, header.pin);
-    return SIZE_LED_CHANNEL_HEADER + baseOffset;
 }
 
 function serializeKeyframe(buffer, offset, keyframe) {
@@ -384,26 +368,26 @@ function parseChannelCollectionHeader(buffer, offset) {
     return {channelCollection, offset: SIZE_CHANNEL_COLLECTION_HEADER + offset};
 }
 
-function parseBaseChannelHeader(buffer, offset) {
+function parseChannelHeader(buffer, offset) {
     /*
         // Parse the buffer
-        typedef struct __base_channel_header_t {
-            uint8_t type;
+        typedef struct __channel_header_t {
+            uint8_t sink;
             uint8_t buffer_size;
         }
     */
-    const baseChannel = {
-        type: buffer.getUint8(offset),
+    const channel = {
+        sink: buffer.getUint8(offset),
         buffer_size: buffer.getUint8(offset + 1)
     };
-    return {baseChannel, offset: SIZE_BASE_CHANNEL_HEADER + offset};
+    return {channel, offset: SIZE_BASE_CHANNEL_HEADER + offset};
 }
 
 function parseLEDChannelHeader(baseChannel, buffer, offset) {
     /*
         // Parse the buffer
         typedef struct __led_channel_header_t {
-            base_channel_header_t base;
+            channel_header_t base;
             uint8_t pin;
         }
     */
@@ -471,29 +455,21 @@ function parseAnimationCharacteristicsBuffer(value) {
 
     const channels = [];
     for (let i = 0; i < channelCollection.num_channels; i++) {
-        const { baseChannel, offset: baseChannelOffset } = parseBaseChannelHeader(buffer, offset);
-        offset = baseChannelOffset;
-        let channel = null;
+        const { channel, offset: channelOffset } = parseChannelHeader(buffer, offset);
+        offset = channelOffset;
         const keyframes = [];
-        if (baseChannel.type === 0x01) {
-            const { ledChannel, offset: ledChannelOffset } = parseLEDChannelHeader(baseChannel, buffer, offset);
-            channel = ledChannel;
-            offset = ledChannelOffset;
 
-            if (baseChannel.buffer_size % SIZE_KEYFRAME !== 0) {
-                throw new Error(`Invalid buffer size. ${baseChannel.buffer_size}`);
-            }
-            for (let j = 0; j < baseChannel.buffer_size / SIZE_KEYFRAME; j++) {
-                const { keyframe, offset: keyframeOffset } = parseKeyframe(buffer, offset);
-                keyframes.push(keyframe);
-                offset = keyframeOffset;
-            }
-            console.log('LED Channel:', ledChannel, 'Keyframes:', keyframes);
-        } else {
-            throw new Error(`Invalid channel type. ${baseChannel.type}`);
+        if (channel.buffer_size % SIZE_KEYFRAME !== 0) {
+            throw new Error(`Invalid buffer size. ${channel.buffer_size}`);
         }
-        if (channel.base && channel.base.buffer_size) {
-            delete channel.base.buffer_size;
+        for (let j = 0; j < channel.buffer_size / SIZE_KEYFRAME; j++) {
+            const { keyframe, offset: keyframeOffset } = parseKeyframe(buffer, offset);
+            keyframes.push(keyframe);
+            offset = keyframeOffset;
+        }
+        console.log('Channel:', channel, 'Keyframes:', keyframes);
+        if (channel.buffer_size) {
+            delete channel.buffer_size;
         }
         channels.push({ channel, keyframes });
     }

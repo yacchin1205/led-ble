@@ -5,6 +5,9 @@
 #define MAX_SIZE_DEVICE_NAME 64
 #define MAX_SIZE_CHANNEL_NAME 64
 
+#define CHANNEL_TYPE_BOOL  0x00
+#define CHANNEL_TYPE_FLOAT 0x01
+
 typedef struct __channel_metdata_t {
     uint8_t type;
     uint8_t led_pin;
