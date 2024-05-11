@@ -1,9 +1,8 @@
 #include <ArduinoBLE.h>
 #include "states.h"
 #include "metadata.h"
+#include "sinks.h"
 #include "ble.h"
-
-#define DEVICE_NAME "GetterLED"
 
 BLEService ledService("19B10000-E8F2-537E-4F6C-D104768A1214"); // Bluetooth® Low Energy LED Service
 

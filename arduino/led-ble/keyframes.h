@@ -46,26 +46,24 @@ class ChannelSink {
         virtual void apply(int frame) = 0;
 };
 
-class AnalogWriteChannelSink : public ChannelSink {
-    private:
-        uint8_t pin;
-    
+class IChannelSinkApplyListener {
     public:
-        AnalogWriteChannelSink(uint8_t sink, uint8_t pin);
-        ~AnalogWriteChannelSink();
-        void setValue(int frame, float value);
-        void apply(int frame);
+        virtual void onApply(int frame) = 0;
 };
 
 class ChannelSinks {
     private:
         int num_sinks;
         ChannelSink* sinks[MAX_SINKS];
-    
+
+        int num_apply_listeners;
+        IChannelSinkApplyListener* apply_listeners[MAX_SINKS];
+
     public:
         ChannelSinks();
         ~ChannelSinks();
         ChannelSink* add(ChannelSink *sink);
+        void addApplyListener(IChannelSinkApplyListener* listener);
         void setValue(uint8_t sink, int frame, float value);
         void apply(int frame);
 };

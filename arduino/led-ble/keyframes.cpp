@@ -95,25 +95,14 @@ ChannelSink::ChannelSink(uint8_t sink) {
     this->sink = sink;
 }
 
-AnalogWriteChannelSink::AnalogWriteChannelSink(uint8_t sink, uint8_t pin): ChannelSink(sink){
-    this->pin = pin;
-}
-
-AnalogWriteChannelSink::~AnalogWriteChannelSink() {
-}
-
-void AnalogWriteChannelSink::setValue(int frame, float value) {
-    // Serial.printf("LEDChannel(%d)::setValue(%f) for #%d\n", this->pin, value, frame);
-    analogWrite(this->pin, value);
-}
-
-void AnalogWriteChannelSink::apply(int frame) {
-}
-
 ChannelSinks::ChannelSinks() {
     this->num_sinks = 0;
     for (int i = 0; i < MAX_SINKS; i++) {
         this->sinks[i] = NULL;
+    }
+    this->num_apply_listeners = 0;
+    for (int i = 0; i < MAX_SINKS; i++) {
+        this->apply_listeners[i] = NULL;
     }
 }
 
@@ -125,6 +114,9 @@ ChannelSinks::~ChannelSinks() {
         delete this->sinks[i];
         this->sinks[i] = NULL;
     }
+    for (int i = 0; i < this->num_apply_listeners; i++) {
+        this->apply_listeners[i] = NULL;
+    }
 }
 
 ChannelSink* ChannelSinks::add(ChannelSink *sink) {
@@ -135,6 +127,15 @@ ChannelSink* ChannelSinks::add(ChannelSink *sink) {
     this->sinks[this->num_sinks] = sink;
     this->num_sinks++;
     return sink;
+}
+
+void ChannelSinks::addApplyListener(IChannelSinkApplyListener *listener) {
+    if (this->num_apply_listeners >= MAX_SINKS) {
+        Serial.println("ChannelSinks::addApplyListener: too many listeners");
+        return;
+    }
+    this->apply_listeners[this->num_apply_listeners] = listener;
+    this->num_apply_listeners++;
 }
 
 void ChannelSinks::setValue(uint8_t sink, int frame, float value) {
@@ -150,6 +151,9 @@ void ChannelSinks::setValue(uint8_t sink, int frame, float value) {
 void ChannelSinks::apply(int frame) {
     for (int i = 0; i < this->num_sinks; i++) {
         this->sinks[i]->apply(frame);
+    }
+    for (int i = 0; i < this->num_apply_listeners; i++) {
+        this->apply_listeners[i]->onApply(frame);
     }
 }
 
