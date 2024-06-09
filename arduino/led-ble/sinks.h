@@ -20,15 +20,24 @@ class AnalogWriteChannelSink : public ChannelSink {
 
 #ifdef ENABLE_FASTLED
 
+typedef struct __rgb_t {
+  float r;
+  float g;
+  float b;
+} rgb_t;
+
 class FastLEDChannelManager : public IChannelSinkApplyListener {
     private:
         CRGB* leds;
+        rgb_t* rgbs;
         int num_leds;
+        bool dirty;
     
     public:
         FastLEDChannelManager(int num_leds);
         ~FastLEDChannelManager();
         CRGB* getLeds();
+        void setLeds(int led, int channel, float value);
         void onApply(int frame);
 };
 
